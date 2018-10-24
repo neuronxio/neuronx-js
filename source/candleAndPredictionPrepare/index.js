@@ -21,21 +21,26 @@ class CandleAndPredictionPrepare {
     }
     this.enabled = enabled
     this.allPoints = []
-    this.baseTemplate = []
     this.basePrediction = []
+  }
+  getMinAndMaxDates () {
+    const pred = _.map(this.predictions, i => i.d)
+    const cand = _.map(this.candles, i => i.d)
+    const all = _.concat(cand, pred)
+    const min = _.min(all)
+    const max = _.max(all)
+    this.r.x = createMatrixByStep({ start: min, end: max, step: 15, stepType: 'm', timeZone: this.timeZone})
+    this.basePrediction = _.map(this.r.x, () => null)
+    
   }
   prepareCandles(){
     let key = 0
     for(let item of this.candles){
-      this.basePrediction.push(null)
       this.r.open.push(item.o)
       this.r.high.push(item.h)
       this.r.low.push(item.l)
       this.r.close.push(item.c)
-      this.r.x.push(moment.unix(item.d).clone().tz(this.timeZone).format())
       this.r.y.push(item.v)
-      this.r.predictions = []
-
       this.allPoints.push(item.h)
       this.allPoints.push(item.l)
 
@@ -43,7 +48,6 @@ class CandleAndPredictionPrepare {
       item.isIntence = intenceCalc(item, this.candles[key + 1])
 
       key = key + 1
-      this.baseTemplate[item.d] = item
       this.r.items.push(item)
     }
     return this
@@ -78,15 +82,17 @@ class CandleAndPredictionPrepare {
         this.r.predictions[name] = { name, y: _.cloneDeep(this.basePrediction) }
       }
       this.allPoints.push(prediction.c)
-      const key = _.findIndex(this.candles, (item) => item.d === prediction.d)
+      const key = _.findIndex(this.r.x, (item) => moment(item).unix() === prediction.d)
       //TODO надо в соответствии с таймреймом искать индекс по диапазону
-      if (key) {
+      console.log(key)
+      if (key !== -1) {
         this.r.predictions[name]['y'][key] = prediction.c
       }
     }
     return this
   }
   run () {
+    this.getMinAndMaxDates()
     this.prepareCandles()
     this.preparePredictions()
     return this
@@ -119,6 +125,23 @@ function intenceCalc(currentCandle, pastCandle, perc = 15) {
 
   // console.log(currentCandle.id, pastCandle, currentCandle.height, pastCandle.height, percentBetweenTwoCandles, isIntence)
   return isIntence
+}
+
+function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm', timeZone = 'Europe/Moscow'}) {
+  let result = []
+  let lastDate = moment.unix(start)
+  let endDate = moment.unix(end)
+  console.log(endDate.toDate())
+
+  for(i = 0; i < 1000; i++){
+    console.log(lastDate.toDate())
+    lastDate = lastDate.clone().add(step, stepType)
+    if (endDate.diff(lastDate, 'minutes') < 0){
+      break
+    }
+    result.push(lastDate.clone().tz(timeZone).format())
+  }
+  return result
 }
 
 module.exports = CandleAndPredictionPrepare
