@@ -84,7 +84,6 @@ class CandleAndPredictionPrepare {
       this.allPoints.push(prediction.c)
       const key = _.findIndex(this.r.x, (item) => moment(item).unix() === prediction.d)
       //TODO надо в соответствии с таймреймом искать индекс по диапазону
-      console.log(key)
       if (key !== -1) {
         this.r.predictions[name]['y'][key] = prediction.c
       }
@@ -131,10 +130,8 @@ function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm
   let result = []
   let lastDate = moment.unix(start)
   let endDate = moment.unix(end)
-  console.log(endDate.toDate())
 
   for(i = 0; i < 1000; i++){
-    console.log(lastDate.toDate())
     lastDate = lastDate.clone().add(step, stepType)
     if (endDate.diff(lastDate, 'minutes') < 0){
       break
