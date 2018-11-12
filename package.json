@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "decimal.js": "^10.0.1",
+    "lodash": "^4.17.11",
+    "moment": "^2.22.2",
     "moment-timezone": "^0.5.21",
     "string-to-color": "^2.0.0"
   }
