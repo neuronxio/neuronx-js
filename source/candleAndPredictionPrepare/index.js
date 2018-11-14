@@ -107,9 +107,6 @@ class CandleAndPredictionPrepare {
   result () {
     return this.r
   }
-  testResult() {
-    return this.r.testResult
-  }
 }
 
 function medianCalc(item) {

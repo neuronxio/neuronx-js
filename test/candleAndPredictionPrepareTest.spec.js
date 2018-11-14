@@ -19,10 +19,8 @@ describe("Test Tail Signal", async function() {
     }).run()
     const { sameDirection, inScope, buyOrSell } = instance.testResult;
     console.log(test.name)
-    console.log(test.result)
-    console.log(sameDirection, inScope, buyOrSell)
-    assert.equal(test.result.sameDirection, sameDirection);
-    assert.equal(test.result.inScope, inScope);
-    assert.equal(test.result.buyOrSell, buyOrSell);
+    assert.equal(test.result.sameDirection, sameDirection)
+    assert.equal(test.result.inScope, inScope)
+    assert.equal(test.result.buyOrSell, buyOrSell)
   })
 })
