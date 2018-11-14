@@ -172,7 +172,6 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
 
   const inScope = isInScope(lastTop, lastMiddle, close, commission)
   const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
-  console.log('asdasdasd', sameDirection)
   const buyOrSell = checkBuyOrSell(close, lastTop, lastMiddle, waitProfit)
   const data = { inScope, sameDirection, buyOrSell}
   if (!sameDirection) {
