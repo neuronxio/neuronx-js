@@ -5,15 +5,15 @@
         <input type="checkbox" v-model="item.enabled"> {{item.name}}
       </label>
     </div>
-    <!-- <vue-plotly :value="cpData"/> -->
+    <vue-plotly :value="cpData"/>
     <vue-plotly :value="cpTail"/>
   </div>
 </template>
 
 <script>
 const { candleAndPredictionPrepare } = require('../../../../index.js')
-// const {candles, predictions} = require('../../../../testAssets/15m')
-const {candles, predictions} = require('../../../../testAssets//tail')
+const {candles, predictions} = require('../../../../testAssets/15m')
+const {candlesTail, predictionsTail} = require('../../../../testAssets//tail')
 const moment = require('moment-timezone')
 const timeZone = moment.tz.guess()
 import VuePlotly from './graphic'

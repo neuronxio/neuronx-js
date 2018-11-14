@@ -1,5 +1,5 @@
 module.exports = {
-  candles: [
+  candlesTail: [
     {
       d: 1540285200,
       l: "6559.9300000000",
@@ -97,7 +97,7 @@ module.exports = {
     //   v: "217.4741950000"
     // }
   ],
-  predictions: [
+  predictionsTail: [
     // {
     //   "d": 1540289700,
     //   "n": "default",
