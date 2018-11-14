@@ -205,7 +205,6 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
 function checkBuyOrSell(close, top, middle, waitProfit) {
   const topScopeByWaitProfit = new Decimal(close).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
   const bottomScopeByWaitProfit = new Decimal(close).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
-  console.log(top, '=', topScopeByWaitProfit, middle, '=', bottomScopeByWaitProfit)
   if (top > topScopeByWaitProfit && middle > topScopeByWaitProfit) {
     return 'BUY'
   }
@@ -246,9 +245,6 @@ function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
   }
   if (!isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
     return true
-  }
-  if (!isFirstTopGreaterLastTop && isFirstMiddleGreaterLastMiddle || isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
-    return false
   }
   return false
 }
