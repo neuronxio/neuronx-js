@@ -93,8 +93,8 @@ class CandleAndPredictionPrepare {
   checkTailSignal() {
     const tops = this.r.predictions['next3 Top'].y
     const middles = this.r.predictions['next3 Middle'].y
-    let lastCloseCandle = (_.last(this.candles)).c
-    return tailSignal({ tops, middles, close: lastCloseCandle, commission: 0.075 })
+    const lastCloseCandle = (_.last(this.candles)).c
+    return tailSignal({ tops, middles, close: lastCloseCandle })
   }
   run () {
     this.getMinAndMaxDates()
@@ -148,18 +148,37 @@ function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm
   return result
 }
 
-function tailSignal({ tops, middles, close, commission, bottomPoint = null }) {
+/**
+ * Определение сигнала "Хвосты"
+ * @param {Array} tops Массив значений верхнего коридора предсказаний
+ * @param {Array} middles Массив значений средней линии предсказаний
+ * @param {number} close Текущий close свечи
+ *  
+ */
+function tailSignal({ tops, middles, close, bottomPoint = null }) {
+  // TODO Спросить про наименование значений
+  const commission = 0.075
+  const waitProfit = 0.18
+
   const firstTop = _.first(_.takeRight(tops, 3))
   const lastTop = _.last(_.takeRight(tops, 3))
   const firstMiddle = _.first(_.takeRight(middles, 3))
   const lastMiddle = (_.takeRight(middles, 3))[1]
+
+  const entryPrice = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  const takeProfit = new Decimal(entryPrice).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  const stopLoss = new Decimal(entryPrice).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
   
   const corridorOfDoubt = getCorridorOfDoubt(close, commission)
   const inScope = isInScope(lastTop, lastMiddle, corridorOfDoubt.top, corridorOfDoubt.bottom)
   const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
 
+  console.log('=====================')
+  console.log('entryPrice', entryPrice)
+  console.log('takeProfit', takeProfit)
+  console.log('stopLoss', stopLoss)
   console.log('Corridor', corridorOfDoubt)
-  console.log('clos', close)
+  console.log('close', close)
   console.log('lastTop', lastTop, 'lastMiddle', lastMiddle)
   console.log('Хвосты в коридоре?', inScope)
   console.log('Одинаковое направление?', sameDirection)
