@@ -22,6 +22,7 @@ class CandleAndPredictionPrepare {
     this.enabled = enabled
     this.allPoints = []
     this.basePrediction = []
+    this.testResult = {}
   }
   getMinAndMaxDates () {
     const pred = _.map(this.predictions, i => i.d)
@@ -90,10 +91,17 @@ class CandleAndPredictionPrepare {
     }
     return this
   }
+  checkTailSignal() {
+    const tops = this.r.predictions['next3 Top'].y
+    const middles = this.r.predictions['next3 Middle'].y
+    const lastCloseCandle = (_.last(this.candles)).c
+    return tailSignal({ tops, middles, close: lastCloseCandle })
+  }
   run () {
     this.getMinAndMaxDates()
     this.prepareCandles()
     this.preparePredictions()
+    this.testResult = this.checkTailSignal()
     return this
   }
   result () {
@@ -139,6 +147,102 @@ function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm
     result.push(lastDate.clone().tz(timeZone).format())
   }
   return result
+}
+
+/**
+ * Определение сигнала "Хвосты"
+ * @param {Array} tops Массив значений верхнего коридора предсказаний
+ * @param {Array} middles Массив значений средней линии предсказаний
+ * @param {number} close Текущий close свечи
+ *  
+ */
+function tailSignal({ tops, middles, close, bottomPoint = null }) {
+  // TODO Спросить про наименование значений
+  const commission = 0.075
+  const waitProfit = 0.18
+
+  const firstTop = _.first(_.takeRight(tops, 3))
+  const lastTop = _.last(_.takeRight(tops, 3))
+  const firstMiddle = _.first(_.takeRight(middles, 3))
+  const lastMiddle = (_.takeRight(middles, 3))[1]
+
+  // const entryPrice = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  // const takeProfit = new Decimal(entryPrice).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  // const stopLoss = new Decimal(entryPrice).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+
+  const inScope = isInScope(lastTop, lastMiddle, close, commission)
+  const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
+  const buyOrSell = checkBuyOrSell(close, lastTop, lastMiddle, waitProfit)
+  const data = { inScope, sameDirection, buyOrSell}
+  if (!sameDirection) {
+    console.log('Нет сигнала, концы смотрят друг на друга')
+  }
+  // Если концы смотрят в разные стороны
+  if (sameDirection && inScope) {
+    console.log('Неуверенный сигнал')
+  }
+  // Концы смотрят в одну сторону, не в коридоре и 
+  if (sameDirection && !inScope && (buyOrSell === 'BUY' || buyOrSell === 'SELL')) {
+    console.log('Сигнал', buyOrSell)
+  }
+  if (sameDirection && !inScope && buyOrSell === false) {
+    console.log('Сигнал есть, но хвосты не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
+  }
+  return data
+}
+
+/**
+ * Определяем сигнал: покупка или продажа
+ * @param {number} close - close текущей свечи
+ * @param {number} top - последняя точка верхней границы коридора предсказаний
+ * @param {number} middle  - посредняя точка средней линии коридора предсказаний
+ * @param {number} waitProfit - ожидаемый профит
+ */
+function checkBuyOrSell(close, top, middle, waitProfit) {
+  const topScopeByWaitProfit = new Decimal(close).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  const bottomScopeByWaitProfit = new Decimal(close).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  if (top > topScopeByWaitProfit && middle > topScopeByWaitProfit) {
+    return 'BUY'
+  }
+  if (top < bottomScopeByWaitProfit && middle < bottomScopeByWaitProfit) {
+    return 'SELL'
+  }
+  return false
+}
+
+/**
+ * Узнаем, находится ли точки хвостов внутри коридора
+ * @param {number} top значение крайней точки по верхнему коридору графика
+ * @param {number} middle значение крайней точки по средней линии графика
+ * @param {number} bottomScope нижняя граница коридора неуверенности
+ * @param {number} topScope верхняя граница коридора неуверенности
+ */
+function isInScope(top, middle, close, commission ) {
+  const topScopeByComission = new Decimal(close).plus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  const bottomScopeByComission = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  if (top > bottomScopeByComission && top < topScopeByComission ||
+    middle > bottomScopeByComission && middle < topScopeByComission) {
+    return true
+  }
+  return false
+}
+/**
+ * Определяем, направлены ли хвосты в одну сторону
+ * @param {number} firstTop 
+ * @param {number} lastTop
+ * @param {number} firstMiddle
+ * @param {number} lastMiddle
+ */
+function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
+  const isFirstTopGreaterLastTop = new Decimal(firstTop).minus(lastTop) > 0
+  const isFirstMiddleGreaterLastMiddle = new Decimal(firstMiddle).minus(lastMiddle) > 0
+  if (isFirstTopGreaterLastTop  &&  isFirstMiddleGreaterLastMiddle) {
+    return true
+  }
+  if (!isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
+    return true
+  }
+  return false
 }
 
 module.exports = CandleAndPredictionPrepare
