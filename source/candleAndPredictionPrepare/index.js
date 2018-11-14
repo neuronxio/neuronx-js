@@ -165,33 +165,60 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
   const firstMiddle = _.first(_.takeRight(middles, 3))
   const lastMiddle = (_.takeRight(middles, 3))[1]
 
-  const entryPrice = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
-  const takeProfit = new Decimal(entryPrice).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
-  const stopLoss = new Decimal(entryPrice).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
-  
-  const corridorOfDoubt = getCorridorOfDoubt(close, commission)
-  const inScope = isInScope(lastTop, lastMiddle, corridorOfDoubt.top, corridorOfDoubt.bottom)
+  // const entryPrice = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  // const takeProfit = new Decimal(entryPrice).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  // const stopLoss = new Decimal(entryPrice).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+
+  const inScope = isInScope(lastTop, lastMiddle, close, commission)
   const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
+  const buyOrSell = checkBuyOrSell(close, lastTop, lastMiddle, waitProfit)
 
   console.log('=====================')
-  console.log('entryPrice', entryPrice)
-  console.log('takeProfit', takeProfit)
-  console.log('stopLoss', stopLoss)
-  console.log('Corridor', corridorOfDoubt)
+  // console.log('entryPrice', entryPrice)
+  // console.log('takeProfit', takeProfit)
+  // console.log('stopLoss', stopLoss)
+  // console.log('Corridor', corridorOfDoubt)
   console.log('close', close)
   console.log('lastTop', lastTop, 'lastMiddle', lastMiddle)
   console.log('Хвосты в коридоре?', inScope)
   console.log('Одинаковое направление?', sameDirection)
+  console.log('Продавать или покупать?', buyOrSell)
 
+  // Если концы смотрят в разные стороны
   if (!sameDirection) {
     console.log('Нет сигнала')
     return false
   }
+  // Концы смотрят в одну сторону, но находятся в коридоре неуверенности
   if (sameDirection && inScope) {
     console.log('Неуверенный сигнал')
     return true
   }
-  console.log('Сигнал')
+  // Концы смотрят в одну сторону, не в коридоре и 
+  if (sameDirection && !inScope && (buyOrSell === 'BUY' || buyOrSell === 'SELL')) {
+    console.log('Сигнал', buyOrSell)
+    return
+  }
+  return console.log('Сигнал есть, но не линии не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
+}
+
+/**
+ * Определяем сигнал: покупка или продажа
+ * @param {number} close - close текущей свечи
+ * @param {number} top - последняя точка верхней границы коридора предсказаний
+ * @param {number} middle  - посредняя точка средней линии коридора предсказаний
+ * @param {number} waitProfit - ожидаемый профит
+ */
+function checkBuyOrSell(close, top, middle, waitProfit) {
+  const topScopeByWaitProfit = new Decimal(close).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  const bottomScopeByWaitProfit = new Decimal(close).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  if (top > topScopeByWaitProfit && middle > topScopeByWaitProfit) {
+    return 'BUY'
+  }
+  if (top < bottomScopeByWaitProfit && middle < topScopeByWaitProfit) {
+    return 'SELL'
+  }
+  return false
 }
 
 /**
@@ -201,24 +228,14 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
  * @param {number} bottomScope нижняя граница коридора неуверенности
  * @param {number} topScope верхняя граница коридора неуверенности
  */
-function isInScope(top, middle, topScope, bottomScope ) {
-  if (top > bottomScope && top < topScope ||
-    middle > bottomScope && middle < topScope) {
+function isInScope(top, middle, close, commission ) {
+  const topScopeByComission = new Decimal(close).plus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  const bottomScopeByComission = new Decimal(close).minus(new Decimal(new Decimal(close).mul(commission)).div(100)).toFixed(3)
+  if (top > bottomScopeByComission && top < topScopeByComission ||
+    middle > bottomScopeByComission && middle < topScopeByComission) {
     return true
   }
   return false
-}
-/**
- * Получаем коридо неуверенности
- * @param {number} close 
- * @param {number} commission 
- */
-function getCorridorOfDoubt(close, commission) {
-  const scale = new Decimal(new Decimal(close).mul(commission)).div(100).toFixed(3)
-  return {
-    top: new Decimal(close).plus(scale).toFixed(3),
-    bottom: new Decimal(close).minus(scale).toFixed(3)
-  }
 }
 /**
  * Определяем, направлены ли хвосты в одну сторону
