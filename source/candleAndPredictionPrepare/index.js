@@ -148,20 +148,21 @@ function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm
   return result
 }
 
-function tailSignal({ tops, middles, close, commission, bottomPoint = null, }) {
+function tailSignal({ tops, middles, close, commission, bottomPoint = null }) {
   const firstTop = _.first(_.takeRight(tops, 3))
   const lastTop = _.last(_.takeRight(tops, 3))
   const firstMiddle = _.first(_.takeRight(middles, 3))
   const lastMiddle = (_.takeRight(middles, 3))[1]
-
-  console.log('firstTop', firstTop)
-  console.log('lastTop', lastTop)
-  console.log('firstMiddle', firstMiddle)
-  console.log('lastMiddle', lastMiddle)
   
-  const scope = getScope({ close, commission })
-  const inScope = isInScope(lastTop, lastMiddle, scope.bottom, scope.top)
+  const corridorOfDoubt = getCorridorOfDoubt(close, commission)
+  const inScope = isInScope(lastTop, lastMiddle, corridorOfDoubt.top, corridorOfDoubt.bottom)
   const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
+
+  console.log('Corridor', corridorOfDoubt)
+  console.log('clos', close)
+  console.log('lastTop', lastTop, 'lastMiddle', lastMiddle)
+  console.log('Хвосты в коридоре?', inScope)
+  console.log('Одинаковое направление?', sameDirection)
 
   if (!sameDirection) {
     console.log('Нет сигнала')
@@ -174,23 +175,39 @@ function tailSignal({ tops, middles, close, commission, bottomPoint = null, }) {
   console.log('Сигнал')
 }
 
-// Узнаем, находится ли точка предсказаний внутри коридора
-function isInScope(top, middle, bottomScope, topScope) {
+/**
+ * Узнаем, находится ли точки хвостов внутри коридора
+ * @param {number} top значение крайней точки по верхнему коридору графика
+ * @param {number} middle значение крайней точки по средней линии графика
+ * @param {number} bottomScope нижняя граница коридора неуверенности
+ * @param {number} topScope верхняя граница коридора неуверенности
+ */
+function isInScope(top, middle, topScope, bottomScope ) {
   if (top > bottomScope && top < topScope ||
     middle > bottomScope && middle < topScope) {
     return true
   }
   return false
 }
-// Формируем коридор
-function getScope({ close, commission}) {
-  const scale = new Decimal(new Decimal(close).mul(commission)).div(100)
+/**
+ * Получаем коридо неуверенности
+ * @param {number} close 
+ * @param {number} commission 
+ */
+function getCorridorOfDoubt(close, commission) {
+  const scale = new Decimal(new Decimal(close).mul(commission)).div(100).toFixed(3)
   return {
-    top: new Decimal(close).plus(scale),
-    bottom: new Decimal(close).minus(scale)
+    top: new Decimal(close).plus(scale).toFixed(3),
+    bottom: new Decimal(close).minus(scale).toFixed(3)
   }
 }
-// Определяем направление
+/**
+ * Определяем, направлены ли хвосты в одну сторону
+ * @param {number} firstTop 
+ * @param {number} lastTop
+ * @param {number} firstMiddle
+ * @param {number} lastMiddle
+ */
 function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
   if ((firstTop - lastTop) > 0 && (firstMiddle - lastMiddle) > 0 ) {
     return true
