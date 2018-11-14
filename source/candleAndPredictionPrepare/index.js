@@ -199,7 +199,7 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
     console.log('Сигнал', buyOrSell)
     return
   }
-  return console.log('Сигнал есть, но не линии не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
+  return console.log('Сигнал есть, но хвосты не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
 }
 
 /**
@@ -215,7 +215,7 @@ function checkBuyOrSell(close, top, middle, waitProfit) {
   if (top > topScopeByWaitProfit && middle > topScopeByWaitProfit) {
     return 'BUY'
   }
-  if (top < bottomScopeByWaitProfit && middle < topScopeByWaitProfit) {
+  if (top < bottomScopeByWaitProfit && middle < bottomScopeByWaitProfit) {
     return 'SELL'
   }
   return false
@@ -245,10 +245,12 @@ function isInScope(top, middle, close, commission ) {
  * @param {number} lastMiddle
  */
 function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
-  if ((firstTop - lastTop) > 0 && (firstMiddle - lastMiddle) > 0 ) {
+  const isFirstTopGreaterLastTop = new Decimal(firstTop).minus(lastTop) > 0
+  const isFirstMiddleGreaterLastMiddle = new Decimal(firstMiddle).minus(lastMiddle) > 0
+  if (isFirstTopGreaterLastTop  &&  isFirstMiddleGreaterLastMiddle) {
     return true
   }
-  if ((firstTop - lastTop) < 0 && (firstMiddle - lastMiddle) < 0) {
+  if (!isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
     return true
   }
   return false
