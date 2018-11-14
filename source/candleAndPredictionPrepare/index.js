@@ -90,10 +90,17 @@ class CandleAndPredictionPrepare {
     }
     return this
   }
+  checkTailSignal() {
+    const tops = this.r.predictions['next3 Top'].y
+    const middles = this.r.predictions['next3 Middle'].y
+    let lastCloseCandle = (_.last(this.candles)).c
+    return tailSignal({ tops, middles, close: lastCloseCandle, commission: 0.075 })
+  }
   run () {
     this.getMinAndMaxDates()
     this.prepareCandles()
     this.preparePredictions()
+    this.checkTailSignal()
     return this
   }
   result () {
@@ -139,6 +146,59 @@ function createMatrixByStep({ start = null, end = null, step = 15, stepType = 'm
     result.push(lastDate.clone().tz(timeZone).format())
   }
   return result
+}
+
+function tailSignal({ tops, middles, close, commission, bottomPoint = null, }) {
+  const firstTop = _.first(_.takeRight(tops, 3))
+  const lastTop = _.last(_.takeRight(tops, 3))
+  const firstMiddle = _.first(_.takeRight(middles, 3))
+  const lastMiddle = (_.takeRight(middles, 3))[1]
+
+  console.log('firstTop', firstTop)
+  console.log('lastTop', lastTop)
+  console.log('firstMiddle', firstMiddle)
+  console.log('lastMiddle', lastMiddle)
+  
+  const scope = getScope({ close, commission })
+  const inScope = isInScope(lastTop, lastMiddle, scope.bottom, scope.top)
+  const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
+
+  if (!sameDirection) {
+    console.log('Нет сигнала')
+    return false
+  }
+  if (sameDirection && inScope) {
+    console.log('Неуверенный сигнал')
+    return true
+  }
+  console.log('Сигнал')
+}
+
+// Узнаем, находится ли точка предсказаний внутри коридора
+function isInScope(top, middle, bottomScope, topScope) {
+  if (top > bottomScope && top < topScope ||
+    middle > bottomScope && middle < topScope) {
+    return true
+  }
+  return false
+}
+// Формируем коридор
+function getScope({ close, commission}) {
+  const scale = new Decimal(new Decimal(close).mul(commission)).div(100)
+  return {
+    top: new Decimal(close).plus(scale),
+    bottom: new Decimal(close).minus(scale)
+  }
+}
+// Определяем направление
+function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
+  if ((firstTop - lastTop) > 0 && (firstMiddle - lastMiddle) > 0 ) {
+    return true
+  }
+  if ((firstTop - lastTop) < 0 && (firstMiddle - lastMiddle) < 0) {
+    return true
+  }
+  return false
 }
 
 module.exports = CandleAndPredictionPrepare
