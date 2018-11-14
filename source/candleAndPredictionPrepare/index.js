@@ -22,6 +22,7 @@ class CandleAndPredictionPrepare {
     this.enabled = enabled
     this.allPoints = []
     this.basePrediction = []
+    this.testResult = {}
   }
   getMinAndMaxDates () {
     const pred = _.map(this.predictions, i => i.d)
@@ -100,11 +101,14 @@ class CandleAndPredictionPrepare {
     this.getMinAndMaxDates()
     this.prepareCandles()
     this.preparePredictions()
-    this.checkTailSignal()
+    this.testResult = this.checkTailSignal()
     return this
   }
   result () {
     return this.r
+  }
+  testResult() {
+    return this.r.testResult
   }
 }
 
@@ -171,35 +175,24 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
 
   const inScope = isInScope(lastTop, lastMiddle, close, commission)
   const sameDirection = isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle)
+  console.log('asdasdasd', sameDirection)
   const buyOrSell = checkBuyOrSell(close, lastTop, lastMiddle, waitProfit)
-
-  console.log('=====================')
-  // console.log('entryPrice', entryPrice)
-  // console.log('takeProfit', takeProfit)
-  // console.log('stopLoss', stopLoss)
-  // console.log('Corridor', corridorOfDoubt)
-  // console.log('close', close)
-  // console.log('lastTop', lastTop, 'lastMiddle', lastMiddle)
-  console.log('Хвосты в коридоре?', inScope)
-  console.log('Одинаковое направление?', sameDirection)
-  console.log('Продавать или покупать?', buyOrSell)
-
-  // Если концы смотрят в разные стороны
+  const data = { inScope, sameDirection, buyOrSell}
   if (!sameDirection) {
-    console.log('Нет сигнала')
-    return false
+    console.log('Нет сигнала, концы смотрят друг на друга')
   }
-  // Концы смотрят в одну сторону, но находятся в коридоре неуверенности
+  // Если концы смотрят в разные стороны
   if (sameDirection && inScope) {
     console.log('Неуверенный сигнал')
-    return true
   }
   // Концы смотрят в одну сторону, не в коридоре и 
   if (sameDirection && !inScope && (buyOrSell === 'BUY' || buyOrSell === 'SELL')) {
     console.log('Сигнал', buyOrSell)
-    return
   }
-  return console.log('Сигнал есть, но хвосты не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
+  if (sameDirection && !inScope && buyOrSell === false) {
+    console.log('Сигнал есть, но хвосты не выше и не ниже 0.18% от close. Нет определенности покупать или продавать')
+  }
+  return data
 }
 
 /**
@@ -212,6 +205,7 @@ function tailSignal({ tops, middles, close, bottomPoint = null }) {
 function checkBuyOrSell(close, top, middle, waitProfit) {
   const topScopeByWaitProfit = new Decimal(close).plus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
   const bottomScopeByWaitProfit = new Decimal(close).minus(new Decimal(new Decimal(close).mul(waitProfit)).div(100)).toFixed(3)
+  console.log(top, '=', topScopeByWaitProfit, middle, '=', bottomScopeByWaitProfit)
   if (top > topScopeByWaitProfit && middle > topScopeByWaitProfit) {
     return 'BUY'
   }
@@ -252,6 +246,9 @@ function isSameDirection(firstTop, lastTop, firstMiddle, lastMiddle) {
   }
   if (!isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
     return true
+  }
+  if (!isFirstTopGreaterLastTop && isFirstMiddleGreaterLastMiddle || isFirstTopGreaterLastTop && !isFirstMiddleGreaterLastMiddle) {
+    return false
   }
   return false
 }
