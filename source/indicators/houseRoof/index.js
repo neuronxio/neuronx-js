@@ -2,7 +2,7 @@ const _ = require('lodash')
 
 class HouseRoof {
   constructor ({ candles, network = 'default', s = 0 }) {
-    this.candles = _.sortBy(candles, item => item.d)
+    this.candles = _.sortBy(candles, item => item.d).reverse() // deck sorting
     this.take = 3
     this.network = network
     this.s = s
@@ -12,18 +12,17 @@ class HouseRoof {
   }
 
   detectRoof ({ leftPredictionClose, midPredictionClose, rightPredictionClose, midCandleHigh, midCandleLow }) {
+    this.result = null
     // mid higher than right or left - house roof
     if (leftPredictionClose < midPredictionClose && midPredictionClose > rightPredictionClose && midCandleHigh > midPredictionClose) {
       // BUY
-      return 1
+      this.result = "LONG"
 
       // mid lower than right or left - re-house roof
-    } else if (leftPredictionClose > midPredictionClose && midPredictionClose < rightPredictionClose && midCandleLow > midPredictionClose) {
+    } else if (leftPredictionClose > midPredictionClose && midPredictionClose < rightPredictionClose && midCandleLow < midPredictionClose) {
       // SELL
-      return -1
+      this.result = "SHORT"
     }
-    // NOTHING
-    return 0
   }
 
   isHouseRoof () {
@@ -41,19 +40,18 @@ class HouseRoof {
       midCandleLow: parseFloat(mid.l),
     }
 
-    const signal = this.detectRoof(data)
-    if (signal) {
+    this.detectRoof(data)
+    if (this.result) {
       // have signal
-      mid.signals['houseRoof'] = signal
+      mid.signals['houseRoof'] = this.result
       // mid candle is top/bot extremum
-      mid['extremum'] = signal
-      // TODO оповестить бота о сигнале покупки/продажи
+      mid['extremum'] = this.result
     }
   }
 
   run () {
     // take first ${this.take} candles with isClosed = true
-    this.data = _.take(_.filter(this.candles, candle => candle.isClosed === true), this.take)
+    this.data = _.take(_.filter(this.candles, candle => candle.isClosed === true && candle.predictions.length > 0), this.take)
 
     this.isHouseRoof()
   }

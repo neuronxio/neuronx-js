@@ -55,7 +55,7 @@ class CandleAndPredictionPrepare {
 
       key = key + 1
       closedDate = moment.unix(item.d).add(this.candleDuration, 'seconds')
-      item['isClosed'] =  closedDate < moment()
+      item['isClosed'] =  closedDate.diff(moment(), 'seconds') <= 30
       item['signals'] = {}
       item['predictions'] = _.filter(this.predictions, row =>
         // candle.openDate <= prediction.date < candle.closedDate
