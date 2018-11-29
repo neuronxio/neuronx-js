@@ -142,11 +142,11 @@ function createMatrixByStep ({ start = null, end = null, step = 15, stepType = '
   let endDate = moment.unix(end)
 
   for (i = 0; i < 1000; i++) {
-    lastDate = lastDate.clone().add(step, stepType)
     if (endDate.diff(lastDate, 'minutes') < 0) {
       break
     }
     result.push(lastDate.clone().tz(timeZone).format())
+    lastDate = lastDate.clone().add(step, stepType)
   }
   return result
 }
