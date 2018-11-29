@@ -25,8 +25,6 @@ class CandleAndPredictionPrepare {
     this.enabled = enabled
     this.allPoints = []
     this.basePrediction = []
-
-    this.run()
   }
 
   getMinAndMaxDates () {
