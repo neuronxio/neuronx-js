@@ -68,7 +68,7 @@ class CandleAndPredictionPrepare {
   preparePredictions () {
     let predictions = []
     if (this.enabled.indexOf('default') !== -1) {
-      predictions = _.filter(this.predictions, i => i.n === 'default')
+      predictions = _.filter(this.predictions, i => i.n === 'default' && i.s === 0)
     }
     if (this.enabled.indexOf('next3') !== -1) {
       let groupped = _.groupBy(_.filter(this.predictions, i => i.n === 'next3'), i => i.d)
