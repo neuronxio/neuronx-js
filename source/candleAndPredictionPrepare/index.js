@@ -53,7 +53,7 @@ class CandleAndPredictionPrepare {
 
       key = key + 1
       closedDate = moment.unix(item.d).add(this.candleDuration, 'seconds')
-      item['isClosed'] =  closedDate.diff(moment(), 'seconds') <= 30
+      item['isClosed'] = closedDate.diff(moment(), 'seconds') <= 30
       item['signals'] = {}
       item['predictions'] = _.filter(this.predictions, row =>
         // candle.openDate <= prediction.date < candle.closedDate
@@ -68,7 +68,14 @@ class CandleAndPredictionPrepare {
   preparePredictions () {
     let predictions = []
     if (this.enabled.indexOf('default') !== -1) {
-      predictions = _.filter(this.predictions, i => i.n === 'default' && i.s === 0)
+      let defaultPredictions = _.filter(this.predictions, i => i.n === 'default')
+      predictions = _.chain(defaultPredictions)
+        .groupBy(p => p.d)
+        .map((value, key) => {
+            return _.sortBy(value, p => p.s).reverse()[0]
+          }
+        )
+        .value()
     }
     if (this.enabled.indexOf('next3') !== -1) {
       let groupped = _.groupBy(_.filter(this.predictions, i => i.n === 'next3'), i => i.d)
