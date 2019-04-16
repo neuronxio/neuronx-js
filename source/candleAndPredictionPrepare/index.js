@@ -77,6 +77,10 @@ class CandleAndPredictionPrepare {
         )
         .value()
     }
+    if (this.enabled.indexOf('next1') !== -1) {
+      let nextOnePredictions = _.filter(this.predictions, i => i.n === 'next1')
+      predictions = _.concat(predictions, nextOnePredictions)
+    }
     if (this.enabled.indexOf('next3') !== -1) {
       let groupped = _.groupBy(_.filter(this.predictions, i => i.n === 'next3'), i => i.d)
       _.forEach(groupped, item => {
